@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ArrowDown, CircleHelp } from 'lucide-react';
-import { useAccount, useWriteContract, useReadContract } from 'wagmi'
+import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
 import { abi, liquidityPoolAddress } from "@/utils/constants"
 import toast from 'react-hot-toast'
 import { getContract, Address, erc20Abi, formatEther, parseUnits } from 'viem';
@@ -26,7 +26,10 @@ export const SwapCard: React.FC = () => {
     const [fromAmount, setFromAmount] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { isConnected, address } = useAccount()
-    const { writeContract } = useWriteContract()
+    const { data: hash, writeContract } = useWriteContract()
+    const { isSuccess } = useWaitForTransactionReceipt({
+        hash,
+    })
 
     const { data: tokenA } = useReadContract({
         abi,
@@ -73,6 +76,17 @@ export const SwapCard: React.FC = () => {
     }) as { data: bigint }
 
     useEffect(() => {
+        if (isConnected) {
+            if (fromToken.address == tokenA) {
+                setFromTokenBalance(tokenABalance)
+            } else {
+                setFromTokenBalance(tokenBBalance)
+            }
+        }
+
+    }, [fromToken, isConnected, tokenA, tokenABalance, tokenBBalance])
+
+    useEffect(() => {
         const fetchTokenDetails = async () => {
             if (tokenA && tokenB) {
                 const tokenAContract = getContract({
@@ -109,6 +123,14 @@ export const SwapCard: React.FC = () => {
         fetchTokenDetails()
     }, [tokenA, tokenB])
 
+    useEffect(() => {
+        if (isSuccess) {
+            setIsSubmitting(false)
+            setFromAmount('')
+            toast.success("Tokens swapped", { duration: 4000 })
+        }
+    }, [isSuccess])
+
     const handleSwap = async () => {
         if (!isConnected) {
             toast("Please connect wallet")
@@ -132,7 +154,6 @@ export const SwapCard: React.FC = () => {
 
                 await waitForTransactionReceipt(wagmiConfig, {
                     hash: result,
-                    confirmations: 1
                 })
                 toast.success("Approved", { id })
             }
@@ -147,22 +168,23 @@ export const SwapCard: React.FC = () => {
                 ],
             }, {
                 onSuccess() {
-                    toast.loading("Swapping...", { id })
+                    toast("Swap initiated", { id, duration: 4000 })
                 },
                 onError() {
                     toast.error("User denied transaction", { id })
-                }
+                    setFromAmount('')
+                },
             })
         } catch (err) {
             const error = err as BaseError
             console.log("Error while swapping", error.shortMessage)
+            setIsSubmitting(false)
+            setFromAmount('')
             if (error.shortMessage === "User rejected the request.") {
                 toast.error('User denied transaction', { id })
             } else {
                 toast.error('Swap failed', { id })
             }
-        } finally {
-            setIsSubmitting(false)
         }
     };
 
@@ -183,7 +205,10 @@ export const SwapCard: React.FC = () => {
                     <div className="bg-slate-800 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-md text-slate-400">Sell</span>
-                            <span className="text-xs text-slate-400">{`Balance: ${fromTokenBalance !== undefined ? (Math.round(parseFloat(formatEther(fromTokenBalance)) * 1000) / 1000).toString() : "Loading..."} ${fromToken?.symbol}`}</span>
+                            {isConnected && (
+                                <span className="text-xs text-slate-400">{`Balance: ${fromTokenBalance !== undefined ? (Math.round(parseFloat(formatEther(fromTokenBalance)) * 1000) / 1000).toString() : "Loading..."} ${fromToken?.symbol}`}</span>
+                            )}
+
                         </div>
                         <div className="flex items-center justify-between">
                             <input
