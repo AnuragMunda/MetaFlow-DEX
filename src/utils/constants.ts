@@ -1,5 +1,6 @@
-export const liquidityPoolAddress = "0x4Ff1A043381cD4B264b4C85f6737714125f62Ca5"
-
+export const liquidityPoolAddress = "0x06571F7c29944030dEAb54202B6EbBddb51b44B3"
+// 0x8341Ce2eCb023f9dE55D61Af69ea7F294DbBCB0a
+// 0xc2ee70e7CBf660C9d4132e1502FCA49E4f0F0ce9
 export const abi = [
     {
         "inputs": [
@@ -451,6 +452,37 @@ export const abi = [
                 "internalType": "uint112",
                 "name": "reserveB",
                 "type": "uint112"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_userAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getUserLiquidity",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenAAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenBAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct MFLiquidityPool.UserLiquidity",
+                "name": "",
+                "type": "tuple"
             }
         ],
         "stateMutability": "view",
